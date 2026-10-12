@@ -225,6 +225,12 @@ def calculate_large_deformation_strain(initial_mesh_file, deformed_mesh_file, ou
     area_strain_array.SetName("ArealStrain")
     area_strain_array.SetNumberOfTuples(num_points)
 
+    # the largest in-plane stretch, 0 where the leaflet shortens in both directions; what sorting
+    # all eigenvalues of the 3x3 tensor gave as the 1st principal strain before
+    max_tensile_strain_array = vtk.vtkDoubleArray()
+    max_tensile_strain_array.SetName("MaxTensileStrain")
+    max_tensile_strain_array.SetNumberOfTuples(num_points)
+
     for i in range(num_points):
         if not nodal_strain_accumulator[i]:
             E_mid = np.zeros((3, 3))
@@ -240,11 +246,13 @@ def calculate_large_deformation_strain(initial_mesh_file, deformed_mesh_file, ou
         strain_tensor_mid_array.SetTuple(i, E_mid.flatten())
         principal_strains_mid_array.SetTuple(i, principal_strains_sorted)
         area_strain_array.SetTuple1(i, avg_areal_strain)
+        max_tensile_strain_array.SetTuple1(i, max(principal_strains_sorted[0], 0.0))
 
     point_data = deformed_mesh.GetPointData()
     point_data.AddArray(strain_tensor_mid_array)
     point_data.AddArray(principal_strains_mid_array)
     point_data.AddArray(area_strain_array)
+    point_data.AddArray(max_tensile_strain_array)
 
     writer = vtk.vtkPolyDataWriter()
     writer.SetFileName(output_file)
